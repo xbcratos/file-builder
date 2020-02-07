@@ -16,6 +16,12 @@
 
 package com.xba.file.server;
 
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+
+@Path("builder")
 public class FileBuilderServer {
 
   /* TODO Create server with corresponding API to send to UI Incremental File Prefix, File and Field types and then let
@@ -24,5 +30,16 @@ public class FileBuilderServer {
       has to create the HTML with the list of types taking into account the metadata it will get from the server.
       Server can be created with jersey
   */
+  /**
+   * Method handling HTTP GET requests. The returned object will be sent
+   * to the client as "text/plain" media type.
+   *
+   * @return String that will be returned as a text/plain response.
+   */
+  @GET
+  @Produces(MediaType.TEXT_PLAIN)
+  public String getIt() {
+    return "Got it!";
+  }
 
 }
