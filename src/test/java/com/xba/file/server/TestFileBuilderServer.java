@@ -19,6 +19,7 @@ import org.glassfish.grizzly.http.server.HttpServer;
 import org.glassfish.jersey.client.ClientConfig;
 import org.glassfish.jersey.logging.LoggingFeature;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -76,9 +77,13 @@ public class TestFileBuilderServer {
     Response response = target.path("/builder/v1/files/create")
                               .request()
                               .post(Entity.entity(createFilesQueryObject, MediaType.APPLICATION_JSON_TYPE));
-    System.out.println("Create Files Response Message: " + response.getStatusInfo().getReasonPhrase());
-    System.out.println("Create Files Response Status: " + response.getStatus());
-    System.out.println("Create Files Response Entity: " + response.getEntity().toString());
+    Assert.assertEquals("Incorrect Response Message", "Accepted", response.getStatusInfo().getReasonPhrase());
+    Assert.assertEquals("Incorrect Response Status", 202, response.getStatus());
+    Assert.assertEquals(
+        "Incorrect Response Entity",
+        createFilesQueryObject.toString(),
+        response.readEntity(CreateFilesQueryObject.class).toString()
+    );
   }
 
   private CreateFilesQueryObject getDefaultCreateFilesQueryObject() {
@@ -107,7 +112,7 @@ public class TestFileBuilderServer {
 
     @Override
     public void filter(ClientRequestContext requestContext) throws IOException {
-      LOG.log(Level.INFO, requestContext.getEntity().toString());
+      LOG.log(Level.INFO, "Request: " + requestContext.getEntity().toString());
     }
   }
 
