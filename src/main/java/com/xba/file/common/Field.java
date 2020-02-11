@@ -18,9 +18,13 @@ package com.xba.file.common;
 
 public class Field<T> {
 
-  private final String name;
-  private final FieldType fieldType;
+  private String name;
+  private FieldType fieldType;
   private T value;
+
+  public Field() {
+    // empty public method needed to handle JSON object deserialization from incoming HTTP requests
+  }
 
   public Field(String name, FieldType fieldType, T value) {
     this.name = name;
@@ -38,6 +42,14 @@ public class Field<T> {
 
   public T getValue() {
     return value;
+  }
+
+  public void setName(String name) {
+    this.name = name;
+  }
+
+  public void setFieldType(FieldType fieldType) {
+    this.fieldType = fieldType;
   }
 
   public void setValue(T value) {

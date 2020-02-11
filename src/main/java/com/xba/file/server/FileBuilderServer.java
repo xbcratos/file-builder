@@ -16,12 +16,18 @@
 
 package com.xba.file.server;
 
+import com.xba.file.server.query.CreateFilesQueryObject;
+
+import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
-@Path("builder")
+@Path("/builder")
 public class FileBuilderServer {
 
   /* TODO Create server with corresponding API to send to UI Incremental File Prefix, File and Field types and then let
@@ -30,16 +36,25 @@ public class FileBuilderServer {
       has to create the HTML with the list of types taking into account the metadata it will get from the server.
       Server can be created with jersey
   */
-  /**
-   * Method handling HTTP GET requests. The returned object will be sent
-   * to the client as "text/plain" media type.
-   *
-   * @return String that will be returned as a text/plain response.
-   */
+
   @GET
+  @Path("/v1/status/job/{jobId}")
   @Produces(MediaType.TEXT_PLAIN)
-  public String getIt() {
-    return "Got it!";
+  public Response getStatus(@PathParam("jobId") String jobId) {
+    return Response.status(Response.Status.OK)
+                                .type(MediaType.TEXT_PLAIN_TYPE)
+                                .entity(String.format("job %s status is: TODO", jobId))
+                                .build();
+  }
+
+  @POST
+  @Path("/v1/files/create")
+  @Consumes(MediaType.APPLICATION_JSON)
+  public Response createFiles(CreateFilesQueryObject createFilesQueryObject) {
+    return Response.status(Response.Status.ACCEPTED)
+                   .type(MediaType.APPLICATION_JSON)
+                   .entity(createFilesQueryObject)
+                   .build();
   }
 
 }
