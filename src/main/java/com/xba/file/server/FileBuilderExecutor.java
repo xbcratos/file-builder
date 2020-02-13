@@ -1,0 +1,184 @@
+/*
+ * Copyright 2020 Xavier Baques
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.xba.file.server;
+
+import com.xba.file.common.Field;
+import com.xba.file.common.FileNameIncrementalType;
+import com.xba.file.common.FileType;
+import com.xba.file.server.query.CreateFilesQueryObject;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Queue;
+import java.util.concurrent.CompletionService;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorCompletionService;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+public class FileBuilderExecutor implements Runnable {
+  // TODO: This code is not well designed. Think about it to correct it
+  private static final int DEFAULT_NUM_THREADS = 1;
+  private static final long MAX_KEEP_RESULT_TIME_IN_MILLIS = 10*60*1000; //10 min * 60 sec/min * 1000 millis/sec
+
+  private CompletionService<FileBuilderWorker.FileBuilderWorkerResult> completionService;
+  private ScheduledThreadPoolExecutor executor;
+  private Map<String, Future<FileBuilderWorker.FileBuilderWorkerResult>> workers;
+  private int numThreads;
+  public final Map<String, FileBuilderWorker.FileBuilderWorkerResult> results;
+  public final Queue<CreateFilesQueryObject> createFilesRequestsQueue;
+  public final AtomicBoolean stop;
+  public final AtomicBoolean running;
+
+  private static FileBuilderExecutor fileBuilderExecutorInstance = null;
+
+  private FileBuilderExecutor() {
+    this.numThreads = DEFAULT_NUM_THREADS;
+    this.results = new ConcurrentHashMap<>();
+    this.createFilesRequestsQueue = new ConcurrentLinkedQueue<>();
+    this.stop = new AtomicBoolean(false);
+    this.running = new AtomicBoolean(false);
+  }
+
+  public static FileBuilderExecutor getInstance() {
+    if (fileBuilderExecutorInstance == null) {
+      fileBuilderExecutorInstance = new FileBuilderExecutor();
+      fileBuilderExecutorInstance.init();
+    }
+
+    return fileBuilderExecutorInstance;
+  }
+
+  public int getNumThreads() {
+    return numThreads;
+  }
+
+  public void setNumThreads(int numThreads) {
+    this.numThreads = numThreads;
+  }
+
+  public void init() {
+    if (!results.isEmpty()) {
+      results.clear();
+    }
+
+    if (!createFilesRequestsQueue.isEmpty()) {
+      createFilesRequestsQueue.clear();
+    }
+
+    stop.set(false);
+    running.set(false);
+
+    this.workers = new ConcurrentHashMap<>();
+    this.executor = new ScheduledThreadPoolExecutor(Math.max(1, numThreads));
+    this.completionService = new ExecutorCompletionService<>(executor);
+  }
+
+  public void destroy() {
+    if (this.executor != null) {
+      this.executor.shutdown();
+      this.executor = null;
+    }
+
+    fileBuilderExecutorInstance = null;
+  }
+
+  @Override
+  public void run() {
+    running.set(true);
+    while (!stop.get()) {
+      // Delete expired results
+      results.forEach((jobId, fileBuilderWorkerResult) -> {
+        long currentTime = System.currentTimeMillis();
+        if (fileBuilderWorkerResult.getCreatedTime() - currentTime > MAX_KEEP_RESULT_TIME_IN_MILLIS) {
+          results.remove(jobId);
+        }
+      });
+
+      // Check finished jobs and set results
+      workers.forEach((jobId, future) -> {
+        if (future.isCancelled()) {
+          workers.remove(jobId);
+        }
+        else if (future.isDone()) {
+          try {
+            FileBuilderWorker.FileBuilderWorkerResult fileBuilderWorkerResult = future.get();
+            results.put(jobId, fileBuilderWorkerResult);
+            workers.remove(jobId);
+          } catch (InterruptedException e) {
+            // TODO add corresponding error handling and/or logging
+            e.printStackTrace();
+          } catch (ExecutionException e) {
+            // TODO add corresponding error handling and/or logging
+            e.printStackTrace();
+          }
+        }
+      });
+
+      // Check for new jobs
+      while (!createFilesRequestsQueue.isEmpty()) {
+        CreateFilesQueryObject createFilesQueryObject = createFilesRequestsQueue.poll();
+        if (createFilesQueryObject != null) {
+          createFiles(
+              createFilesQueryObject.getBaseDirectory(),
+              createFilesQueryObject.getNamePrefix(),
+              createFilesQueryObject.getNameSuffix(),
+              createFilesQueryObject.getFileNameIncrementalType(),
+              createFilesQueryObject.getFields(),
+              createFilesQueryObject.getFileType(),
+              createFilesQueryObject.getNumRows(),
+              createFilesQueryObject.getNumFiles()
+          );
+        }
+      }
+    }
+    running.set(false);
+  }
+
+  public void createFiles(
+      String baseDirectory,
+      String namePrefix,
+      String nameSuffix,
+      FileNameIncrementalType fileNameIncrementalType,
+      List<Field> fields,
+      FileType fileType,
+      int numRows,
+      int numFiles
+  ) {
+    FileBuilderWorker worker = new FileBuilderWorker(baseDirectory,
+        namePrefix,
+        nameSuffix,
+        fileNameIncrementalType,
+        fields,
+        fileType,
+        numRows,
+        numFiles
+    );
+
+    String jobId = worker.getJobId();
+    while (workers.containsKey(jobId)) {
+      jobId = worker.getAnotherJobId();
+    }
+
+    Future<FileBuilderWorker.FileBuilderWorkerResult> workerFuture = completionService.submit(worker);
+    workers.put(jobId, workerFuture);
+  }
+}

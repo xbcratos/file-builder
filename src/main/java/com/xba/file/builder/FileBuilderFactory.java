@@ -11,7 +11,7 @@ import java.util.List;
 
 public class FileBuilderFactory {
 
-  public FileBuilder create(
+  public static FileBuilder create(
       String baseDirectory,
       String namePrefix,
       String nameSuffix,

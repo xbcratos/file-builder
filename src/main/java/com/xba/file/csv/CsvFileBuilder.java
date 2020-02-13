@@ -90,8 +90,9 @@ public class CsvFileBuilder implements FileBuilder {
     return field;
   }
 
-  private void getHeadersFromFieldsList() {
+  private String[] getHeadersFromFieldsList() {
     fields.forEach(field -> headers.add(field.getName()));
+    return headers.toArray(new String[0]);
   }
 
   private List<Row> generateRows() {
@@ -132,7 +133,7 @@ public class CsvFileBuilder implements FileBuilder {
         nameSuffix,
         incrementalValue,
         generateRows(),
-        headers.toArray(new String[0])
+        getHeadersFromFieldsList()
     );
   }
 }

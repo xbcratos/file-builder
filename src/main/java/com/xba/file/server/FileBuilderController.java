@@ -17,6 +17,7 @@
 package com.xba.file.server;
 
 import com.xba.file.server.query.CreateFilesQueryObject;
+import com.xba.file.server.response.JobStatus;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -26,24 +27,29 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.util.Map;
+import java.util.concurrent.Future;
 
 @Path("/builder")
-public class FileBuilderServer {
-
-  /* TODO Create server with corresponding API to send to UI Incremental File Prefix, File and Field types and then let
-      the UI run file creation passing to the server baseDirectory, FilePrefix, IncrementalFilePrefixType, FileSuffix,
-      Filetype, number of rows (aka in the UI as number of entities per file) and list of fields for each row. The UI
-      has to create the HTML with the list of types taking into account the metadata it will get from the server.
-      Server can be created with jersey
-  */
+public class FileBuilderController {
 
   @GET
   @Path("/v1/status/job/{jobId}")
   @Produces(MediaType.TEXT_PLAIN)
   public Response getStatus(@PathParam("jobId") String jobId) {
+    FileBuilderExecutor fileBuilderExecutorInstance = FileBuilderExecutor.getInstance();
+    JobStatus jobStatus;
+    Map<String, FileBuilderWorker.FileBuilderWorkerResult> results = fileBuilderExecutorInstance.results;
+    if (results.containsKey(jobId)) {
+      FileBuilderWorker.FileBuilderWorkerResult result = results.get(jobId);
+      results.remove(jobId);
+      jobStatus = new JobStatus(jobId, result.getCreatedFiles(), result.getErrorFiles());
+    } else {
+      jobStatus = new JobStatus(jobId, 0, 0); // job hasn't finished yet // TODO modify code to allow partial status
+    }
     return Response.status(Response.Status.OK)
-                                .type(MediaType.TEXT_PLAIN_TYPE)
-                                .entity(String.format("job %s status is: TODO", jobId))
+                                .type(MediaType.APPLICATION_JSON)
+                                .entity(jobStatus)
                                 .build();
   }
 
@@ -51,9 +57,11 @@ public class FileBuilderServer {
   @Path("/v1/files/create")
   @Consumes(MediaType.APPLICATION_JSON)
   public Response createFiles(CreateFilesQueryObject createFilesQueryObject) {
+    FileBuilderExecutor fileBuilderExecutorInstance = FileBuilderExecutor.getInstance();
+    fileBuilderExecutorInstance.createFilesRequestsQueue.add(createFilesQueryObject);
     return Response.status(Response.Status.ACCEPTED)
                    .type(MediaType.APPLICATION_JSON)
-                   .entity(createFilesQueryObject)
+                   .entity(0) // TODO modify code to return the correct id. This requires id to be assigned here to the job
                    .build();
   }
 

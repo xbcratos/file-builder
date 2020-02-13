@@ -31,7 +31,7 @@ import java.util.logging.Logger;
 
 import static org.junit.Assert.assertEquals;
 
-public class TestFileBuilderServer {
+public class TestFileBuilderController {
 
   private HttpServer server;
   private WebTarget target;

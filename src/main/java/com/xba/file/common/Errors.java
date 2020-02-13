@@ -20,7 +20,8 @@ public enum Errors {
 
   FILE_BUILDER_00("Unknown file type: {}"),
   FILE_BUILDER_01("Field '{}' has an unknown field type: {}"),
-  FILE_BUILDER_02("Error when creating File Writer for file type: {}")
+  FILE_BUILDER_02("Error when creating File Writer for file type: {}"),
+  FILE_BUILDER_03("Error creating file: {}. Created files: {}. Error files: {}"),
   ;
 
   private final String errorMessage;
