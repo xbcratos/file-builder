@@ -28,14 +28,15 @@ import java.util.concurrent.CompletionService;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class FileBuilderExecutor implements Runnable {
-  // TODO: This code is not well designed. Think about it to correct it
+  // TODO: This code is not well designed. Think about it to correct it.
+  //  NOTE that I can access this object through different threads no matter if the object itself
+  //  is running a while loop but I have to take into account concurrency issues
   private static final int DEFAULT_NUM_THREADS = 1;
   private static final long MAX_KEEP_RESULT_TIME_IN_MILLIS = 10*60*1000; //10 min * 60 sec/min * 1000 millis/sec
 
