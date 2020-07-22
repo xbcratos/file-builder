@@ -59,7 +59,8 @@ public class FileBuilderWorker implements Callable {
       List<Field> fields,
       FileType fileType,
       int numRows,
-      int numFiles
+      int numFiles,
+      UUID jobId
   ) {
     this.baseDirectory = baseDirectory;
     this.namePrefix = namePrefix;
@@ -69,7 +70,7 @@ public class FileBuilderWorker implements Callable {
     this.fileType = fileType;
     this.numRows = numRows;
     this.numFiles = numFiles;
-    this.jobId = UUID.randomUUID();
+    this.jobId = jobId;
     this.createdFiles = new AtomicInteger(0);
     this.errorFiles = new AtomicInteger(0);
     this.jobFinished = false;
@@ -79,9 +80,12 @@ public class FileBuilderWorker implements Callable {
     return jobId.toString();
   }
 
-  public String getAnotherJobId() {
-    this.jobId = UUID.randomUUID();
-    return jobId.toString();
+  public AtomicInteger getCreatedFiles() {
+    return createdFiles;
+  }
+
+  public AtomicInteger getErrorFiles() {
+    return errorFiles;
   }
 
   public boolean isRunning() {

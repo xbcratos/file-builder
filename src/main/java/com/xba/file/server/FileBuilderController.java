@@ -28,7 +28,6 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.Map;
-import java.util.concurrent.Future;
 
 @Path("/builder")
 public class FileBuilderController {
@@ -36,7 +35,10 @@ public class FileBuilderController {
   @GET
   @Path("/v1/status/job/{jobId}")
   @Produces(MediaType.TEXT_PLAIN)
-  public Response getStatus(@PathParam("jobId") String jobId) {
+  public Response getStatus(
+      @PathParam("jobId")
+          String jobId
+  ) {
     FileBuilderExecutor fileBuilderExecutorInstance = FileBuilderExecutor.getInstance();
     JobStatus jobStatus;
     Map<String, FileBuilderWorker.FileBuilderWorkerResult> results = fileBuilderExecutorInstance.getResults();
@@ -45,12 +47,17 @@ public class FileBuilderController {
       results.remove(jobId);
       jobStatus = new JobStatus(jobId, result.getCreatedFiles(), result.getErrorFiles());
     } else {
-      jobStatus = new JobStatus(jobId, 0, 0); // job hasn't finished yet // TODO modify code to allow partial status
+      Map<String, FileBuilderWorkerWrapper> workers = fileBuilderExecutorInstance.getWorkers();
+      if (workers.containsKey(jobId)) {
+        FileBuilderWorker worker = workers.get(jobId).getWorker();
+        jobStatus = new JobStatus(jobId, worker.getCreatedFiles().intValue(), worker.getErrorFiles().intValue());
+      } else {
+        return Response.status(Response.Status.BAD_REQUEST)
+                       .entity(String.format("No job find with jobId = %s", jobId))
+                       .build();
+      }
     }
-    return Response.status(Response.Status.OK)
-                                .type(MediaType.APPLICATION_JSON)
-                                .entity(jobStatus)
-                                .build();
+    return Response.status(Response.Status.OK).type(MediaType.APPLICATION_JSON).entity(jobStatus).build();
   }
 
   @POST
@@ -58,11 +65,8 @@ public class FileBuilderController {
   @Consumes(MediaType.APPLICATION_JSON)
   public Response createFiles(CreateFilesQueryObject createFilesQueryObject) {
     FileBuilderExecutor fileBuilderExecutorInstance = FileBuilderExecutor.getInstance();
-    fileBuilderExecutorInstance.getCreateFilesRequestsQueue().add(createFilesQueryObject);
-    return Response.status(Response.Status.ACCEPTED)
-                   .type(MediaType.APPLICATION_JSON)
-                   .entity(0) // TODO modify code to return the correct id. This requires id to be assigned here to the job
-                   .build();
+    String jobId = fileBuilderExecutorInstance.addCreateFilesQuery(createFilesQueryObject);
+    return Response.status(Response.Status.ACCEPTED).type(MediaType.APPLICATION_JSON).entity(jobId).build();
   }
 
 }

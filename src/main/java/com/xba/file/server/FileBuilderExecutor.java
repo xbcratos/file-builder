@@ -24,6 +24,7 @@ import com.xba.file.server.query.CreateFilesQueryObject;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.UUID;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -42,10 +43,10 @@ public class FileBuilderExecutor implements Runnable {
 
   private CompletionService<FileBuilderWorker.FileBuilderWorkerResult> completionService;
   private ScheduledThreadPoolExecutor executor;
-  private Map<String, Future<FileBuilderWorker.FileBuilderWorkerResult>> workers;
+  private Map<String, FileBuilderWorkerWrapper> workers;
   private int numThreads;
   private final Map<String, FileBuilderWorker.FileBuilderWorkerResult> results;
-  private final Queue<CreateFilesQueryObject> createFilesRequestsQueue;
+  private final Queue<Job> createFilesJobsQueue;
   private final AtomicBoolean stop;
   private final AtomicBoolean running;
 
@@ -54,7 +55,7 @@ public class FileBuilderExecutor implements Runnable {
   private FileBuilderExecutor() {
     this.numThreads = DEFAULT_NUM_THREADS;
     this.results = new ConcurrentHashMap<>();
-    this.createFilesRequestsQueue = new ConcurrentLinkedQueue<>();
+    this.createFilesJobsQueue = new ConcurrentLinkedQueue<>();
     this.stop = new AtomicBoolean(false);
     this.running = new AtomicBoolean(false);
   }
@@ -80,8 +81,18 @@ public class FileBuilderExecutor implements Runnable {
     return results;
   }
 
-  public Queue<CreateFilesQueryObject> getCreateFilesRequestsQueue() {
-    return createFilesRequestsQueue;
+  public Map<String, FileBuilderWorkerWrapper> getWorkers() {
+    return workers;
+  }
+
+  public String addCreateFilesQuery(CreateFilesQueryObject createFilesQueryObject) {
+    UUID jobId = UUID.randomUUID();
+    while (workers.containsKey(jobId.toString())) {
+      jobId = UUID.randomUUID();
+    }
+    createFilesJobsQueue.add(new Job(jobId, createFilesQueryObject));
+
+    return jobId.toString();
   }
 
   public void init() {
@@ -89,8 +100,8 @@ public class FileBuilderExecutor implements Runnable {
       results.clear();
     }
 
-    if (!createFilesRequestsQueue.isEmpty()) {
-      createFilesRequestsQueue.clear();
+    if (!createFilesJobsQueue.isEmpty()) {
+      createFilesJobsQueue.clear();
     }
 
     stop.set(false);
@@ -127,13 +138,14 @@ public class FileBuilderExecutor implements Runnable {
       });
 
       // Check finished jobs and set results
-      workers.forEach((jobId, future) -> {
-        if (future.isCancelled()) {
+      workers.forEach((jobId, workerWrapper) -> {
+        Future<FileBuilderWorker.FileBuilderWorkerResult> workerFuture = workerWrapper.getWorkerFuture();
+        if (workerFuture.isCancelled()) {
           workers.remove(jobId);
         }
-        else if (future.isDone()) {
+        else if (workerFuture.isDone()) {
           try {
-            FileBuilderWorker.FileBuilderWorkerResult fileBuilderWorkerResult = future.get();
+            FileBuilderWorker.FileBuilderWorkerResult fileBuilderWorkerResult = workerFuture.get();
             results.put(jobId, fileBuilderWorkerResult);
             workers.remove(jobId);
           } catch (InterruptedException e) {
@@ -147,9 +159,10 @@ public class FileBuilderExecutor implements Runnable {
       });
 
       // Check for new jobs
-      while (!createFilesRequestsQueue.isEmpty()) {
-        CreateFilesQueryObject createFilesQueryObject = createFilesRequestsQueue.poll();
-        if (createFilesQueryObject != null) {
+      while (!createFilesJobsQueue.isEmpty()) {
+        Job nextJob = createFilesJobsQueue.poll();
+        if (nextJob != null) {
+          CreateFilesQueryObject createFilesQueryObject = nextJob.getCreateFilesQueryObject();
           createFiles(
               createFilesQueryObject.getBaseDirectory(),
               createFilesQueryObject.getNamePrefix(),
@@ -158,7 +171,8 @@ public class FileBuilderExecutor implements Runnable {
               createFilesQueryObject.getFields(),
               createFilesQueryObject.getFileType(),
               createFilesQueryObject.getNumRows(),
-              createFilesQueryObject.getNumFiles()
+              createFilesQueryObject.getNumFiles(),
+              nextJob.getJobId()
           );
         }
       }
@@ -174,7 +188,8 @@ public class FileBuilderExecutor implements Runnable {
       List<Field> fields,
       FileType fileType,
       int numRows,
-      int numFiles
+      int numFiles,
+      UUID jobId
   ) {
     FileBuilderWorker worker = new FileBuilderWorker(baseDirectory,
         namePrefix,
@@ -183,15 +198,11 @@ public class FileBuilderExecutor implements Runnable {
         fields,
         fileType,
         numRows,
-        numFiles
+        numFiles,
+        jobId
     );
 
-    String jobId = worker.getJobId();
-    while (workers.containsKey(jobId)) {
-      jobId = worker.getAnotherJobId();
-    }
-
     Future<FileBuilderWorker.FileBuilderWorkerResult> workerFuture = completionService.submit(worker);
-    workers.put(jobId, workerFuture);
+    workers.put(jobId.toString(), new FileBuilderWorkerWrapper(worker, workerFuture));
   }
 }
