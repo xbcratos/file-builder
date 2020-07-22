@@ -58,7 +58,8 @@ public class Main {
    * @throws IOException
    */
   public static void main(String[] args) throws IOException {
-    FileBuilderExecutor.getInstance().run();
+    Thread fileBuilderExecutorThread = new Thread(FileBuilderExecutor.getInstance());
+    fileBuilderExecutorThread.start();
     final HttpServer server = startServer();
     System.out.println(String.format("Jersey app started with WADL available at "
         + "%sapplication.wadl\nHit enter to stop it...", BASE_URI));
