@@ -68,7 +68,7 @@ public class TestFileBuilderController {
     String responseMsg = target.path("/builder/v1/status/job/0")
                                .request()
                                .get(String.class);
-    assertEquals("job 0 status is: TODO", responseMsg);
+    assertEquals("{\"jobId\":\"0\",\"createdFiles\":0,\"errorFiles\":0}", responseMsg);
   }
 
   @Test
@@ -112,7 +112,12 @@ public class TestFileBuilderController {
 
     @Override
     public void filter(ClientRequestContext requestContext) throws IOException {
-      LOG.log(Level.INFO, "Request: " + requestContext.getEntity().toString());
+      LOG.log(Level.INFO,
+          "Request: " + requestContext != null ? requestContext.getEntity() != null
+                                                 ? requestContext.getEntity()
+                                                                 .toString()
+                                                 : "Request Context Entity is null" : "Request context is null"
+      );
     }
   }
 

@@ -36,6 +36,30 @@ public class CreateFilesQueryObject {
   int numRows;
   int numFiles;
 
+  public CreateFilesQueryObject() {
+
+  }
+
+  public CreateFilesQueryObject(
+      String baseDirectory,
+      String namePrefix,
+      String nameSuffix,
+      FileNameIncrementalType fileNameIncrementalType,
+      List<Field> fields,
+      FileType fileType,
+      int numRows,
+      int numFiles
+  ) {
+    this.baseDirectory = baseDirectory;
+    this.namePrefix = namePrefix;
+    this.nameSuffix = nameSuffix;
+    this.fileNameIncrementalType = fileNameIncrementalType;
+    this.fields = fields;
+    this.fileType = fileType;
+    this.numRows = numRows;
+    this.numFiles = numFiles;
+  }
+
   public String getBaseDirectory() {
     return baseDirectory;
   }

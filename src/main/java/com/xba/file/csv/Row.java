@@ -41,6 +41,8 @@ public class Row {
       rowStringBuilder.append(field.getValue());
       rowStringBuilder.append(',');
     });
+    // remove last unnecessary comma
+    rowStringBuilder.deleteCharAt(rowStringBuilder.length() - 1);
 
     return rowStringBuilder.toString();
   }

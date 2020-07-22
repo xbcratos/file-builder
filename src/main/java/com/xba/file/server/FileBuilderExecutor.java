@@ -44,10 +44,10 @@ public class FileBuilderExecutor implements Runnable {
   private ScheduledThreadPoolExecutor executor;
   private Map<String, Future<FileBuilderWorker.FileBuilderWorkerResult>> workers;
   private int numThreads;
-  public final Map<String, FileBuilderWorker.FileBuilderWorkerResult> results;
-  public final Queue<CreateFilesQueryObject> createFilesRequestsQueue;
-  public final AtomicBoolean stop;
-  public final AtomicBoolean running;
+  private final Map<String, FileBuilderWorker.FileBuilderWorkerResult> results;
+  private final Queue<CreateFilesQueryObject> createFilesRequestsQueue;
+  private final AtomicBoolean stop;
+  private final AtomicBoolean running;
 
   private static FileBuilderExecutor fileBuilderExecutorInstance = null;
 
@@ -76,6 +76,14 @@ public class FileBuilderExecutor implements Runnable {
     this.numThreads = numThreads;
   }
 
+  public Map<String, FileBuilderWorker.FileBuilderWorkerResult> getResults() {
+    return results;
+  }
+
+  public Queue<CreateFilesQueryObject> getCreateFilesRequestsQueue() {
+    return createFilesRequestsQueue;
+  }
+
   public void init() {
     if (!results.isEmpty()) {
       results.clear();
@@ -91,6 +99,10 @@ public class FileBuilderExecutor implements Runnable {
     this.workers = new ConcurrentHashMap<>();
     this.executor = new ScheduledThreadPoolExecutor(Math.max(1, numThreads));
     this.completionService = new ExecutorCompletionService<>(executor);
+  }
+
+  public void stop() {
+    stop.set(true);
   }
 
   public void destroy() {

@@ -39,7 +39,7 @@ public class FileBuilderController {
   public Response getStatus(@PathParam("jobId") String jobId) {
     FileBuilderExecutor fileBuilderExecutorInstance = FileBuilderExecutor.getInstance();
     JobStatus jobStatus;
-    Map<String, FileBuilderWorker.FileBuilderWorkerResult> results = fileBuilderExecutorInstance.results;
+    Map<String, FileBuilderWorker.FileBuilderWorkerResult> results = fileBuilderExecutorInstance.getResults();
     if (results.containsKey(jobId)) {
       FileBuilderWorker.FileBuilderWorkerResult result = results.get(jobId);
       results.remove(jobId);
@@ -58,7 +58,7 @@ public class FileBuilderController {
   @Consumes(MediaType.APPLICATION_JSON)
   public Response createFiles(CreateFilesQueryObject createFilesQueryObject) {
     FileBuilderExecutor fileBuilderExecutorInstance = FileBuilderExecutor.getInstance();
-    fileBuilderExecutorInstance.createFilesRequestsQueue.add(createFilesQueryObject);
+    fileBuilderExecutorInstance.getCreateFilesRequestsQueue().add(createFilesQueryObject);
     return Response.status(Response.Status.ACCEPTED)
                    .type(MediaType.APPLICATION_JSON)
                    .entity(0) // TODO modify code to return the correct id. This requires id to be assigned here to the job
