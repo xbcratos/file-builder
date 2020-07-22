@@ -92,7 +92,9 @@ public class CsvFileBuilder implements FileBuilder {
 
   private String[] getHeadersFromFieldsList() {
     fields.forEach(field -> headers.add(field.getName()));
-    return headers.toArray(new String[0]);
+    String[] headersArray = headers.toArray(new String[0]);
+    headers.clear();
+    return headersArray;
   }
 
   private List<Row> generateRows() {

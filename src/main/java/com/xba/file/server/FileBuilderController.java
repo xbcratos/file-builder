@@ -66,7 +66,7 @@ public class FileBuilderController {
   public Response createFiles(CreateFilesQueryObject createFilesQueryObject) {
     FileBuilderExecutor fileBuilderExecutorInstance = FileBuilderExecutor.getInstance();
     String jobId = fileBuilderExecutorInstance.addCreateFilesQuery(createFilesQueryObject);
-    return Response.status(Response.Status.ACCEPTED).type(MediaType.APPLICATION_JSON).entity(jobId).build();
+    return Response.status(Response.Status.ACCEPTED).type(MediaType.APPLICATION_JSON).entity(String.format("Created job with id: %s", jobId)).build();
   }
 
 }
