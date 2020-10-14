@@ -15,18 +15,16 @@
  */
 package com.xba.file.server;
 
-import com.xba.file.server.query.CreateFilesQueryObject;
 import org.glassfish.grizzly.http.server.HttpServer;
 import org.glassfish.jersey.grizzly2.httpserver.GrizzlyHttpServerFactory;
+import org.glassfish.jersey.jackson.JacksonFeature;
 import org.glassfish.jersey.logging.LoggingFeature;
 import org.glassfish.jersey.server.ResourceConfig;
-import org.glassfish.jersey.jackson.JacksonFeature;
 
 import java.io.IOException;
 import java.net.URI;
 import java.util.logging.Logger;
 
-import static com.sun.xml.internal.ws.spi.db.BindingContextFactory.LOGGER;
 
 public class Main {
 
