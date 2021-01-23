@@ -38,7 +38,7 @@ public class Main {
   public static HttpServer startServer() {
     // create a resource config that scans for JAX-RS resources and providers
     // in com.xba.file.server package
-    final ResourceConfig rc = new ResourceConfig().packages("com.xba.file.server")
+    final ResourceConfig rc = new ResourceConfig().packages("com.xba.file.server.rest")
                                                   .register(JacksonFeature.class) // to handle JSON objects
                                                   .register(new LoggingFeature(
                                                       Logger.getGlobal(),

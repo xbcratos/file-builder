@@ -19,7 +19,7 @@ package com.xba.file.server;
 import com.xba.file.common.Field;
 import com.xba.file.common.FileNameIncrementalType;
 import com.xba.file.common.FileType;
-import com.xba.file.server.query.CreateFilesQueryObject;
+import com.xba.file.server.rest.query.CreateFilesQuery;
 
 import java.util.List;
 import java.util.Map;
@@ -85,12 +85,12 @@ public class FileBuilderExecutor implements Runnable {
     return workers;
   }
 
-  public String addCreateFilesQuery(CreateFilesQueryObject createFilesQueryObject) {
+  public String addCreateFilesQuery(CreateFilesQuery createFilesQuery) {
     UUID jobId = UUID.randomUUID();
     while (workers.containsKey(jobId.toString())) {
       jobId = UUID.randomUUID();
     }
-    createFilesJobsQueue.add(new Job(jobId, createFilesQueryObject));
+    createFilesJobsQueue.add(new Job(jobId, createFilesQuery));
 
     return jobId.toString();
   }
@@ -162,16 +162,16 @@ public class FileBuilderExecutor implements Runnable {
       while (!createFilesJobsQueue.isEmpty()) {
         Job nextJob = createFilesJobsQueue.poll();
         if (nextJob != null) {
-          CreateFilesQueryObject createFilesQueryObject = nextJob.getCreateFilesQueryObject();
+          CreateFilesQuery createFilesQuery = nextJob.getCreateFilesQueryObject();
           createFiles(
-              createFilesQueryObject.getBaseDirectory(),
-              createFilesQueryObject.getNamePrefix(),
-              createFilesQueryObject.getNameSuffix(),
-              createFilesQueryObject.getFileNameIncrementalType(),
-              createFilesQueryObject.getFields(),
-              createFilesQueryObject.getFileType(),
-              createFilesQueryObject.getNumRows(),
-              createFilesQueryObject.getNumFiles(),
+              createFilesQuery.getBaseDirectory(),
+              createFilesQuery.getNamePrefix(),
+              createFilesQuery.getNameSuffix(),
+              createFilesQuery.getFileNameIncrementalType(),
+              createFilesQuery.getFields(),
+              createFilesQuery.getFileType(),
+              createFilesQuery.getNumRows(),
+              createFilesQuery.getNumFiles(),
               nextJob.getJobId()
           );
         }

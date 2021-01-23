@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.xba.file.server.query;
+package com.xba.file.server.rest.query;
 
 import com.google.gson.Gson;
 import com.xba.file.common.Field;
@@ -25,7 +25,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 import java.util.List;
 
 @XmlRootElement
-public class CreateFilesQueryObject {
+public class CreateFilesQuery {
 
   String baseDirectory;
   String namePrefix;
@@ -36,11 +36,11 @@ public class CreateFilesQueryObject {
   int numRows;
   int numFiles;
 
-  public CreateFilesQueryObject() {
+  public CreateFilesQuery() {
 
   }
 
-  public CreateFilesQueryObject(
+  public CreateFilesQuery(
       String baseDirectory,
       String namePrefix,
       String nameSuffix,

@@ -14,10 +14,14 @@
  * limitations under the License.
  */
 
-package com.xba.file.server;
+package com.xba.file.server.rest;
 
-import com.xba.file.server.query.CreateFilesQueryObject;
-import com.xba.file.server.response.JobStatus;
+import com.xba.file.server.FileBuilderExecutor;
+import com.xba.file.server.FileBuilderWorker;
+import com.xba.file.server.FileBuilderWorkerWrapper;
+import com.xba.file.server.rest.query.CreateFilesQuery;
+import com.xba.file.server.rest.response.CreateFilesResponse;
+import com.xba.file.server.rest.response.JobStatusResponse;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -34,39 +38,47 @@ public class FileBuilderController {
 
   @GET
   @Path("/v1/status/job/{jobId}")
-  @Produces(MediaType.TEXT_PLAIN)
+  @Produces(MediaType.APPLICATION_JSON)
   public Response getStatus(
       @PathParam("jobId")
           String jobId
   ) {
     FileBuilderExecutor fileBuilderExecutorInstance = FileBuilderExecutor.getInstance();
-    JobStatus jobStatus;
+    JobStatusResponse jobStatusResponse;
     Map<String, FileBuilderWorker.FileBuilderWorkerResult> results = fileBuilderExecutorInstance.getResults();
     if (results.containsKey(jobId)) {
       FileBuilderWorker.FileBuilderWorkerResult result = results.get(jobId);
       results.remove(jobId);
-      jobStatus = new JobStatus(jobId, result.getCreatedFiles(), result.getErrorFiles());
+      jobStatusResponse = new JobStatusResponse(jobId, result.getCreatedFiles(), result.getErrorFiles(), null);
     } else {
       Map<String, FileBuilderWorkerWrapper> workers = fileBuilderExecutorInstance.getWorkers();
       if (workers.containsKey(jobId)) {
         FileBuilderWorker worker = workers.get(jobId).getWorker();
-        jobStatus = new JobStatus(jobId, worker.getCreatedFiles().intValue(), worker.getErrorFiles().intValue());
+        jobStatusResponse = new JobStatusResponse(
+            jobId,
+            worker.getCreatedFiles().intValue(),
+            worker.getErrorFiles().intValue(),
+            null
+        );
       } else {
-        return Response.status(Response.Status.BAD_REQUEST)
-                       .entity(String.format("No job find with jobId = %s", jobId))
+        return Response.status(Response.Status.OK)
+                       .entity(new JobStatusResponse(jobId, -1, -1, "Job not found"))
                        .build();
       }
     }
-    return Response.status(Response.Status.OK).type(MediaType.APPLICATION_JSON).entity(jobStatus).build();
+    return Response.status(Response.Status.OK).type(MediaType.APPLICATION_JSON).entity(jobStatusResponse).build();
   }
 
   @POST
   @Path("/v1/files/create")
   @Consumes(MediaType.APPLICATION_JSON)
-  public Response createFiles(CreateFilesQueryObject createFilesQueryObject) {
+  public Response createFiles(CreateFilesQuery createFilesQuery) {
     FileBuilderExecutor fileBuilderExecutorInstance = FileBuilderExecutor.getInstance();
-    String jobId = fileBuilderExecutorInstance.addCreateFilesQuery(createFilesQueryObject);
-    return Response.status(Response.Status.ACCEPTED).type(MediaType.APPLICATION_JSON).entity(String.format("Created job with id: %s", jobId)).build();
+    String jobId = fileBuilderExecutorInstance.addCreateFilesQuery(createFilesQuery);
+    return Response.status(Response.Status.ACCEPTED).type(MediaType.APPLICATION_JSON).entity(new CreateFilesResponse(
+        jobId,
+        null
+    )).build();
   }
 
 }

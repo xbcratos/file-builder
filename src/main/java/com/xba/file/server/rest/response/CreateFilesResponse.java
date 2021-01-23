@@ -14,27 +14,34 @@
  * limitations under the License.
  */
 
-package com.xba.file.server;
+package com.xba.file.server.rest.response;
 
-import com.xba.file.server.rest.query.CreateFilesQuery;
+public class CreateFilesResponse {
 
-import java.util.UUID;
+  String jobId;
+  String errorMessage;
 
-public class Job {
-
-  private UUID jobId;
-  private CreateFilesQuery createFilesQuery;
-
-  public Job(UUID jobId, CreateFilesQuery createFilesQuery) {
-    this.jobId = jobId;
-    this.createFilesQuery = createFilesQuery;
+  public CreateFilesResponse() {
   }
 
-  public UUID getJobId() {
+  public CreateFilesResponse(String jobId, String errorMessage) {
+    this.jobId = jobId;
+    this.errorMessage = errorMessage;
+  }
+
+  public String getJobId() {
     return jobId;
   }
 
-  public CreateFilesQuery getCreateFilesQueryObject() {
-    return createFilesQuery;
+  public void setJobId(String jobId) {
+    this.jobId = jobId;
+  }
+
+  public String getErrorMessage() {
+    return errorMessage;
+  }
+
+  public void setErrorMessage(String errorMessage) {
+    this.errorMessage = errorMessage;
   }
 }

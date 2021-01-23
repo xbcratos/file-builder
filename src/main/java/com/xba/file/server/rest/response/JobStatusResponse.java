@@ -14,24 +14,26 @@
  * limitations under the License.
  */
 
-package com.xba.file.server.response;
+package com.xba.file.server.rest.response;
 
 import com.google.gson.Gson;
 
-public class JobStatus {
+public class JobStatusResponse {
 
   String jobId;
   int createdFiles;
   int errorFiles;
+  String errorMessage;
 
-  public JobStatus() {
+  public JobStatusResponse() {
 
   }
 
-  public JobStatus(String jobId, int createdFiles, int errorFiles) {
+  public JobStatusResponse(String jobId, int createdFiles, int errorFiles, String errorMessage) {
     this.jobId = jobId;
     this.createdFiles = createdFiles;
     this.errorFiles = errorFiles;
+    this.errorMessage = errorMessage;
   }
 
   public String getJobId() {
@@ -56,6 +58,14 @@ public class JobStatus {
 
   public void setErrorFiles(int errorFiles) {
     this.errorFiles = errorFiles;
+  }
+
+  public String getErrorMessage() {
+    return errorMessage;
+  }
+
+  public void setErrorMessage(String errorMessage) {
+    this.errorMessage = errorMessage;
   }
 
   @Override

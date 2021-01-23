@@ -13,7 +13,9 @@ import com.xba.file.common.Field;
 import com.xba.file.common.FieldType;
 import com.xba.file.common.FileNameIncrementalType;
 import com.xba.file.common.FileType;
-import com.xba.file.server.query.CreateFilesQueryObject;
+import com.xba.file.server.rest.query.CreateFilesQuery;
+import com.xba.file.server.rest.response.CreateFilesResponse;
+import com.xba.file.server.rest.response.JobStatusResponse;
 import org.glassfish.grizzly.http.server.HttpServer;
 
 import org.glassfish.jersey.client.ClientConfig;
@@ -30,6 +32,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 public class TestFileBuilderController {
 
@@ -65,40 +69,42 @@ public class TestFileBuilderController {
    */
   @Test
   public void testGetStatus() {
-    String responseMsg = target.path("/builder/v1/status/job/0")
-                               .request()
-                               .get(String.class);
-    assertEquals("{\"jobId\":\"0\",\"createdFiles\":0,\"errorFiles\":0}", responseMsg);
+    JobStatusResponse responseJobStatusResponse = target.path("/builder/v1/status/job/0")
+                                                        .request()
+                                                        .get(JobStatusResponse.class);
+    assertEquals("0", responseJobStatusResponse.getJobId());
+    assertEquals("Job not found", responseJobStatusResponse.getErrorMessage());
   }
 
   @Test
   public void testCreateFiles() {
-    CreateFilesQueryObject createFilesQueryObject = getDefaultCreateFilesQueryObject();
+    CreateFilesQuery createFilesQuery = getDefaultCreateFilesQueryObject();
     Response response = target.path("/builder/v1/files/create")
                               .request()
-                              .post(Entity.entity(createFilesQueryObject, MediaType.APPLICATION_JSON_TYPE));
+                              .post(Entity.entity(createFilesQuery, MediaType.APPLICATION_JSON_TYPE));
     Assert.assertEquals("Incorrect Response Message", "Accepted", response.getStatusInfo().getReasonPhrase());
     Assert.assertEquals("Incorrect Response Status", 202, response.getStatus());
-    Assert.assertEquals(
-        "Incorrect Response Entity",
-        createFilesQueryObject.toString(),
-        response.readEntity(CreateFilesQueryObject.class).toString()
+    CreateFilesResponse createFilesResponse = response.readEntity(CreateFilesResponse.class);
+    assertNull(createFilesResponse.getErrorMessage());
+    assertTrue(
+        "create files response job id is -1 which is only used to indicate an error happened",
+        !"-1".equals(createFilesResponse.getJobId())
     );
   }
 
-  private CreateFilesQueryObject getDefaultCreateFilesQueryObject() {
-    CreateFilesQueryObject createFilesQueryObject = new CreateFilesQueryObject();
+  private CreateFilesQuery getDefaultCreateFilesQueryObject() {
+    CreateFilesQuery createFilesQuery = new CreateFilesQuery();
 
-    createFilesQueryObject.setBaseDirectory("/temp");
-    createFilesQueryObject.setNamePrefix("namePrefix");
-    createFilesQueryObject.setNameSuffix("nameSuffix");
-    createFilesQueryObject.setFileNameIncrementalType(FileNameIncrementalType.COUNTER);
-    createFilesQueryObject.setFields(getDefaultFields());
-    createFilesQueryObject.setFileType(FileType.CSV);
-    createFilesQueryObject.setNumRows(5);
-    createFilesQueryObject.setNumFiles(10);
+    createFilesQuery.setBaseDirectory("/tmp");
+    createFilesQuery.setNamePrefix("namePrefix");
+    createFilesQuery.setNameSuffix("nameSuffix");
+    createFilesQuery.setFileNameIncrementalType(FileNameIncrementalType.COUNTER);
+    createFilesQuery.setFields(getDefaultFields());
+    createFilesQuery.setFileType(FileType.CSV);
+    createFilesQuery.setNumRows(5);
+    createFilesQuery.setNumFiles(10);
 
-    return createFilesQueryObject;
+    return createFilesQuery;
   }
 
   private List<Field> getDefaultFields() {
